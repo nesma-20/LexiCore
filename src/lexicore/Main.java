@@ -457,8 +457,8 @@ public class Main {
 
         System.out.println(
                 "Number of characters: "
-                        + analyzer.countCharacters(
-                        originalText
+                        + analyzer.countCharactersExcludingSpaces(
+                        processedText
                 )
         );
 

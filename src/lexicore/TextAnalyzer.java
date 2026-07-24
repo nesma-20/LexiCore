@@ -12,6 +12,10 @@ public class TextAnalyzer {
             ProcessedText processedText
     ) {
 
+        if (processedText == null) {
+            return 0;
+        }
+
         List<String> allTokens =
                 processedText.getAllTokens();
 
@@ -21,6 +25,10 @@ public class TextAnalyzer {
     public int countSentences(
             ProcessedText processedText
     ) {
+
+        if (processedText == null) {
+            return 0;
+        }
 
         List<List<String>> sentenceTokens =
                 processedText.getSentenceTokens();
@@ -32,6 +40,10 @@ public class TextAnalyzer {
             ProcessedText processedText
     ) {
 
+        if (processedText == null) {
+            return 0;
+        }
+
         List<String> allTokens =
                 processedText.getAllTokens();
 
@@ -41,23 +53,92 @@ public class TextAnalyzer {
         return uniqueWords.size();
     }
 
-    public int countCharacters(
-            String originalText
+    public int countCharactersExcludingSpaces(
+            ProcessedText processedText
     ) {
 
-        if (originalText == null) {
+        if (processedText == null) {
             return 0;
         }
 
-        return originalText.length();
+        String cleanedText =
+                processedText.getCleanedText();
+
+        int characterCount = 0;
+
+        for (int index = 0;
+             index < cleanedText.length();
+             index++) {
+
+            char currentCharacter =
+                    cleanedText.charAt(index);
+
+            if (!Character.isWhitespace(
+                    currentCharacter
+            )) {
+                characterCount++;
+            }
+        }
+
+        return characterCount;
     }
 
-    public Map<String, Integer> countWordFrequencies(
+    public Map<Character, Integer>
+    countCharacterFrequencies(
+            ProcessedText processedText
+    ) {
+
+        Map<Character, Integer>
+                characterFrequencies =
+                new HashMap<>();
+
+        if (processedText == null) {
+            return characterFrequencies;
+        }
+
+        String cleanedText =
+                processedText.getCleanedText();
+
+        for (int index = 0;
+             index < cleanedText.length();
+             index++) {
+
+            char currentCharacter =
+                    cleanedText.charAt(index);
+
+            if (Character.isWhitespace(
+                    currentCharacter
+            )) {
+                continue;
+            }
+
+            int currentFrequency =
+                    characterFrequencies
+                            .getOrDefault(
+                                    currentCharacter,
+                                    0
+                            );
+
+            characterFrequencies.put(
+                    currentCharacter,
+                    currentFrequency + 1
+            );
+        }
+
+        return characterFrequencies;
+    }
+
+    public Map<String, Integer>
+    countWordFrequencies(
             ProcessedText processedText
     ) {
 
         Map<String, Integer> wordFrequencies =
                 new HashMap<>();
+
+        if (processedText == null) {
+            return wordFrequencies;
+        }
 
         List<String> allTokens =
                 processedText.getAllTokens();
