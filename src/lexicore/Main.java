@@ -17,8 +17,6 @@ public class Main {
                         )
         ) {
 
-
-
             TextLoader textLoader =
                     new TextLoader();
 
@@ -48,7 +46,6 @@ public class Main {
                             originalText
                     );
 
-            // Temporary integration for testing Nesma's Keyword Extraction and Autocomplete classes.
             KeywordExtractor keywordExtractor =
                     new KeywordExtractor();
 
@@ -57,7 +54,28 @@ public class Main {
                             processedText
                     );
 
+            // للاختبار فقط: ربط البحث عن كلمة.
+            PositionalSearchEngine searchEngine =
+                    new PositionalSearchEngine();
+
+            searchEngine.buildIndex(
+                    processedText
+            );
+
+            // للاختبار فقط: ربط البحث عن عبارة.
+            PhraseSearchEngine phraseSearchEngine =
+                    new PhraseSearchEngine();
+
+            phraseSearchEngine.buildIndex(
+                    processedText
+            );
+
+            // للاختبار فقط: ربط مقارنة النصوص.
+            SimilarityDetector similarityDetector =
+                    new SimilarityDetector();
+
             System.out.println();
+
             System.out.println(
                     "Text loaded and processed successfully."
             );
@@ -68,7 +86,11 @@ public class Main {
                     processedText,
                     analyzer,
                     keywordExtractor,
-                    autocompleteService
+                    autocompleteService,
+                    preprocessor,
+                    searchEngine,
+                    phraseSearchEngine,
+                    similarityDetector
             );
 
         } catch (IOException exception) {
@@ -93,6 +115,7 @@ public class Main {
                     reader.readLine();
 
             if (choice == null) {
+
                 return null;
             }
 
@@ -191,7 +214,11 @@ public class Main {
             ProcessedText processedText,
             TextAnalyzer analyzer,
             KeywordExtractor keywordExtractor,
-            AutocompleteService autocompleteService
+            AutocompleteService autocompleteService,
+            TextPreprocessor preprocessor,
+            PositionalSearchEngine searchEngine,
+            PhraseSearchEngine phraseSearchEngine,
+            SimilarityDetector similarityDetector
     ) throws IOException {
 
         while (true) {
@@ -278,6 +305,41 @@ public class Main {
                     break;
                 }
 
+                // للاختبار فقط: اختبار البحث عن كلمة.
+                case "8": {
+
+                    handlePositionalSearch(
+                            reader,
+                            searchEngine
+                    );
+
+                    break;
+                }
+
+                // للاختبار فقط: اختبار Similarity Detector.
+                case "9": {
+
+                    handleSimilarity(
+                            reader,
+                            processedText,
+                            preprocessor,
+                            similarityDetector
+                    );
+
+                    break;
+                }
+
+                // للاختبار فقط: اختبار البحث عن عبارة.
+                case "10": {
+
+                    handlePhraseSearch(
+                            reader,
+                            phraseSearchEngine
+                    );
+
+                    break;
+                }
+
                 case "0": {
 
                     System.out.println(
@@ -292,7 +354,7 @@ public class Main {
                     System.out.println(
                             "Invalid choice. "
                                     + "Please enter a number "
-                                    + "from 0 to 7."
+                                    + "from 0 to 10."
                     );
                 }
             }
@@ -374,6 +436,19 @@ public class Main {
 
         System.out.println(
                 "7. Smart autocomplete"
+        );
+
+        // للاختبار فقط: خيارات كود البنت الثانية.
+        System.out.println(
+                "8. Positional word search"
+        );
+
+        System.out.println(
+                "9. Similarity detector"
+        );
+
+        System.out.println(
+                "10. Positional phrase search"
         );
 
         System.out.println(
@@ -609,6 +684,154 @@ public class Main {
 
         System.out.println(
                 "=================================="
+        );
+    }
+
+    // للاختبار فقط: ربط البحث عن كلمة بالقائمة.
+    private static void handlePositionalSearch(
+            BufferedReader reader,
+            PositionalSearchEngine searchEngine
+    ) throws IOException {
+
+        System.out.print(
+                "Enter a word to search: "
+        );
+
+        String query =
+                reader.readLine();
+
+        List<SearchMatch> matches =
+                searchEngine.searchWord(
+                        query
+                );
+
+        System.out.println();
+
+        System.out.println(
+                "========== SEARCH RESULTS =========="
+        );
+
+        if (matches.isEmpty()) {
+
+            System.out.println(
+                    "No matches were found."
+            );
+
+        } else {
+
+            for (SearchMatch match : matches) {
+
+                System.out.println(
+                        match
+                );
+            }
+        }
+
+        System.out.println(
+                "===================================="
+        );
+    }
+
+    // للاختبار فقط: ربط مقارنة النصوص بالقائمة.
+    private static void handleSimilarity(
+            BufferedReader reader,
+            ProcessedText firstProcessedText,
+            TextPreprocessor preprocessor,
+            SimilarityDetector similarityDetector
+    ) throws IOException {
+
+        System.out.println(
+                "Enter the second text in one line:"
+        );
+
+        String secondText =
+                reader.readLine();
+
+        if (
+                secondText == null
+                        || secondText.isBlank()
+        ) {
+
+            System.out.println(
+                    "The second text cannot be empty."
+            );
+
+            return;
+        }
+
+        ProcessedText secondProcessedText =
+                preprocessor.preprocess(
+                        secondText
+                );
+
+        SimilarityResult result =
+                similarityDetector.compareTexts(
+                        firstProcessedText.getAllTokens(),
+                        secondProcessedText.getAllTokens()
+                );
+
+        System.out.println();
+
+        System.out.println(
+                "========== SIMILARITY RESULT =========="
+        );
+
+        System.out.println(
+                result
+        );
+
+        System.out.println(
+                "Common words: "
+                        + result.getCommonWords()
+        );
+
+        System.out.println(
+                "======================================="
+        );
+    }
+
+    // للاختبار فقط: ربط البحث عن عبارة بالقائمة.
+    private static void handlePhraseSearch(
+            BufferedReader reader,
+            PhraseSearchEngine phraseSearchEngine
+    ) throws IOException {
+
+        System.out.print(
+                "Enter a phrase to search: "
+        );
+
+        String query =
+                reader.readLine();
+
+        List<SearchMatch> matches =
+                phraseSearchEngine.searchPhrase(
+                        query
+                );
+
+        System.out.println();
+
+        System.out.println(
+                "========== PHRASE SEARCH RESULTS =========="
+        );
+
+        if (matches.isEmpty()) {
+
+            System.out.println(
+                    "No phrase matches were found."
+            );
+
+        } else {
+
+            for (SearchMatch match : matches) {
+
+                System.out.println(
+                        match
+                );
+            }
+        }
+
+        System.out.println(
+                "==========================================="
         );
     }
 }
