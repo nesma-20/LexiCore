@@ -3,6 +3,8 @@ package lexicore;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
+import java.util.Map;
 
 public class Main {
 
@@ -44,6 +46,15 @@ public class Main {
                             originalText
                     );
 
+            // Temporary integration for testing Nesma's Keyword Extraction and Autocomplete classes.
+            KeywordExtractor keywordExtractor =
+                    new KeywordExtractor();
+
+            AutocompleteService autocompleteService =
+                    new AutocompleteService(
+                            processedText
+                    );
+
             System.out.println();
             System.out.println(
                     "Text loaded and processed successfully."
@@ -53,7 +64,9 @@ public class Main {
                     reader,
                     originalText,
                     processedText,
-                    analyzer
+                    analyzer,
+                    keywordExtractor,
+                    autocompleteService
             );
 
         } catch (IOException exception) {
@@ -64,11 +77,6 @@ public class Main {
             );
         }
     }
-
-
-
-
-
 
     private static String loadInitialText(
             BufferedReader reader,
@@ -179,7 +187,9 @@ public class Main {
             BufferedReader reader,
             String originalText,
             ProcessedText processedText,
-            TextAnalyzer analyzer
+            TextAnalyzer analyzer,
+            KeywordExtractor keywordExtractor,
+            AutocompleteService autocompleteService
     ) throws IOException {
 
         while (true) {
@@ -239,9 +249,28 @@ public class Main {
                 case "5": {
 
                     printTextStatistics(
-                            originalText,
                             processedText,
                             analyzer
+                    );
+
+                    break;
+                }
+
+                case "6": {
+
+                    printKeywords(
+                            processedText,
+                            keywordExtractor
+                    );
+
+                    break;
+                }
+
+                case "7": {
+
+                    runAutocomplete(
+                            reader,
+                            autocompleteService
                     );
 
                     break;
@@ -261,7 +290,7 @@ public class Main {
                     System.out.println(
                             "Invalid choice. "
                                     + "Please enter a number "
-                                    + "from 0 to 5."
+                                    + "from 0 to 7."
                     );
                 }
             }
@@ -335,6 +364,14 @@ public class Main {
 
         System.out.println(
                 "5. Show text statistics"
+        );
+
+        System.out.println(
+                "6. Show extracted keywords"
+        );
+
+        System.out.println(
+                "7. Smart autocomplete"
         );
 
         System.out.println(
@@ -423,7 +460,6 @@ public class Main {
     }
 
     private static void printTextStatistics(
-            String originalText,
             ProcessedText processedText,
             TextAnalyzer analyzer
     ) {
@@ -456,14 +492,121 @@ public class Main {
         );
 
         System.out.println(
-                "Number of characters: "
-                        + analyzer.countCharactersExcludingSpaces(
-                        processedText
-                )
+                "Number of characters excluding spaces: "
+                        + analyzer
+                        .countCharactersExcludingSpaces(
+                                processedText
+                        )
         );
 
         System.out.println(
                 "====================================="
+        );
+    }
+
+    private static void printKeywords(
+            ProcessedText processedText,
+            KeywordExtractor keywordExtractor
+    ) {
+
+        Map<String, Integer> keywords =
+                keywordExtractor.extractKeywords(
+                        processedText,
+                        5
+                );
+
+        System.out.println();
+
+        System.out.println(
+                "========== TOP KEYWORDS =========="
+        );
+
+        if (keywords.isEmpty()) {
+
+            System.out.println(
+                    "No keywords were found."
+            );
+
+        } else {
+
+            for (
+                    Map.Entry<String, Integer> entry
+                    : keywords.entrySet()
+            ) {
+
+                System.out.println(
+                        entry.getKey()
+                                + " : "
+                                + entry.getValue()
+                );
+            }
+        }
+
+        System.out.println(
+                "=================================="
+        );
+    }
+
+    private static void runAutocomplete(
+            BufferedReader reader,
+            AutocompleteService autocompleteService
+    ) throws IOException {
+
+        System.out.print(
+                "Enter a word prefix: "
+        );
+
+        String prefix =
+                reader.readLine();
+
+        if (
+                prefix == null
+                        || prefix.isBlank()
+        ) {
+
+            System.out.println(
+                    "The prefix cannot be empty."
+            );
+
+            return;
+        }
+
+        List<String> suggestions =
+                autocompleteService.getSuggestions(
+                        prefix,
+                        5
+                );
+
+        System.out.println();
+
+        System.out.println(
+                "====== AUTOCOMPLETE RESULTS ======"
+        );
+
+        if (suggestions.isEmpty()) {
+
+            System.out.println(
+                    "No suggestions were found."
+            );
+
+        } else {
+
+            for (String suggestion : suggestions) {
+
+                System.out.println(
+                        suggestion
+                                + " (frequency: "
+                                + autocompleteService
+                                .getWordFrequency(
+                                        suggestion
+                                )
+                                + ")"
+                );
+            }
+        }
+
+        System.out.println(
+                "=================================="
         );
     }
 }
