@@ -41,56 +41,66 @@ public class Main {
                 return;
             }
 
-            ProcessedText processedText =
+            ProcessedText initialProcessedText =
                     preprocessor.preprocess(
                             originalText
                     );
+
+            TextState initialState =
+                    new TextState(
+                            originalText,
+                            initialProcessedText,
+                            "Initial text"
+                    );
+
+            UndoRedoManager undoRedoManager =
+                    new UndoRedoManager(
+                            initialState
+                    );
+
+            TextReplacementService replacementService =
+                    new TextReplacementService();
 
             KeywordExtractor keywordExtractor =
                     new KeywordExtractor();
 
             AutocompleteService autocompleteService =
                     new AutocompleteService(
-                            processedText
+                            initialProcessedText
                     );
 
-            // للاختبار فقط: ربط البحث عن كلمة.
             PositionalSearchEngine searchEngine =
                     new PositionalSearchEngine();
 
-            searchEngine.buildIndex(
-                    processedText
-            );
-
-            // للاختبار فقط: ربط البحث عن عبارة.
             PhraseSearchEngine phraseSearchEngine =
                     new PhraseSearchEngine();
 
-            phraseSearchEngine.buildIndex(
-                    processedText
-            );
-
-            // للاختبار فقط: ربط مقارنة النصوص.
             SimilarityDetector similarityDetector =
                     new SimilarityDetector();
 
-            System.out.println();
+            refreshIndexes(
+                    initialState,
+                    searchEngine,
+                    phraseSearchEngine,
+                    autocompleteService
+            );
 
+            System.out.println();
             System.out.println(
                     "Text loaded and processed successfully."
             );
 
             runMainMenu(
                     reader,
-                    originalText,
-                    processedText,
                     analyzer,
                     keywordExtractor,
                     autocompleteService,
                     preprocessor,
                     searchEngine,
                     phraseSearchEngine,
-                    similarityDetector
+                    similarityDetector,
+                    replacementService,
+                    undoRedoManager
             );
 
         } catch (IOException exception) {
@@ -115,7 +125,6 @@ public class Main {
                     reader.readLine();
 
             if (choice == null) {
-
                 return null;
             }
 
@@ -210,18 +219,36 @@ public class Main {
 
     private static void runMainMenu(
             BufferedReader reader,
-            String originalText,
-            ProcessedText processedText,
             TextAnalyzer analyzer,
             KeywordExtractor keywordExtractor,
             AutocompleteService autocompleteService,
             TextPreprocessor preprocessor,
             PositionalSearchEngine searchEngine,
             PhraseSearchEngine phraseSearchEngine,
-            SimilarityDetector similarityDetector
+            SimilarityDetector similarityDetector,
+            TextReplacementService replacementService,
+            UndoRedoManager undoRedoManager
     ) throws IOException {
 
         while (true) {
+
+            TextState currentState =
+                    undoRedoManager.getCurrentState();
+
+            if (
+                    currentState == null
+                            || currentState.getProcessedText() == null
+            ) {
+
+                System.out.println(
+                        "No active text state exists."
+                );
+
+                return;
+            }
+
+            ProcessedText currentProcessedText =
+                    currentState.getProcessedText();
 
             printMainMenu();
 
@@ -241,8 +268,8 @@ public class Main {
 
                 case "1": {
 
-                    printOriginalText(
-                            originalText
+                    printCurrentText(
+                            currentState.getRawText()
                     );
 
                     break;
@@ -251,7 +278,7 @@ public class Main {
                 case "2": {
 
                     printCleanedText(
-                            processedText
+                            currentProcessedText
                     );
 
                     break;
@@ -260,7 +287,7 @@ public class Main {
                 case "3": {
 
                     printSentenceTokens(
-                            processedText
+                            currentProcessedText
                     );
 
                     break;
@@ -269,7 +296,7 @@ public class Main {
                 case "4": {
 
                     printAllTokens(
-                            processedText
+                            currentProcessedText
                     );
 
                     break;
@@ -278,7 +305,7 @@ public class Main {
                 case "5": {
 
                     printTextStatistics(
-                            processedText,
+                            currentProcessedText,
                             analyzer
                     );
 
@@ -288,7 +315,7 @@ public class Main {
                 case "6": {
 
                     printKeywords(
-                            processedText,
+                            currentProcessedText,
                             keywordExtractor
                     );
 
@@ -305,7 +332,6 @@ public class Main {
                     break;
                 }
 
-                // للاختبار فقط: اختبار البحث عن كلمة.
                 case "8": {
 
                     handlePositionalSearch(
@@ -316,12 +342,11 @@ public class Main {
                     break;
                 }
 
-                // للاختبار فقط: اختبار Similarity Detector.
                 case "9": {
 
                     handleSimilarity(
                             reader,
-                            processedText,
+                            currentProcessedText,
                             preprocessor,
                             similarityDetector
                     );
@@ -329,12 +354,49 @@ public class Main {
                     break;
                 }
 
-                // للاختبار فقط: اختبار البحث عن عبارة.
                 case "10": {
 
                     handlePhraseSearch(
                             reader,
                             phraseSearchEngine
+                    );
+
+                    break;
+                }
+
+                case "11": {
+
+                    handleReplacement(
+                            reader,
+                            replacementService,
+                            undoRedoManager,
+                            searchEngine,
+                            phraseSearchEngine,
+                            autocompleteService
+                    );
+
+                    break;
+                }
+
+                case "12": {
+
+                    handleUndo(
+                            undoRedoManager,
+                            searchEngine,
+                            phraseSearchEngine,
+                            autocompleteService
+                    );
+
+                    break;
+                }
+
+                case "13": {
+
+                    handleRedo(
+                            undoRedoManager,
+                            searchEngine,
+                            phraseSearchEngine,
+                            autocompleteService
                     );
 
                     break;
@@ -354,7 +416,7 @@ public class Main {
                     System.out.println(
                             "Invalid choice. "
                                     + "Please enter a number "
-                                    + "from 0 to 10."
+                                    + "from 0 to 13."
                     );
                 }
             }
@@ -411,7 +473,7 @@ public class Main {
         );
 
         System.out.println(
-                "1. Show original text"
+                "1. Show current text"
         );
 
         System.out.println(
@@ -438,7 +500,6 @@ public class Main {
                 "7. Smart autocomplete"
         );
 
-        // للاختبار فقط: خيارات كود البنت الثانية.
         System.out.println(
                 "8. Positional word search"
         );
@@ -452,6 +513,18 @@ public class Main {
         );
 
         System.out.println(
+                "11. Replace word"
+        );
+
+        System.out.println(
+                "12. Undo"
+        );
+
+        System.out.println(
+                "13. Redo"
+        );
+
+        System.out.println(
                 "0. Exit"
         );
 
@@ -460,22 +533,22 @@ public class Main {
         );
     }
 
-    private static void printOriginalText(
-            String originalText
+    private static void printCurrentText(
+            String currentText
     ) {
 
         System.out.println();
 
         System.out.println(
-                "========== ORIGINAL TEXT =========="
+                "========== CURRENT TEXT =========="
         );
 
         System.out.println(
-                originalText
+                currentText
         );
 
         System.out.println(
-                "==================================="
+                "=================================="
         );
     }
 
@@ -572,6 +645,14 @@ public class Main {
                 "Number of characters excluding spaces: "
                         + analyzer
                         .countCharactersExcludingSpaces(
+                                processedText
+                        )
+        );
+
+        System.out.println(
+                "Character frequencies: "
+                        + analyzer
+                        .countCharacterFrequencies(
                                 processedText
                         )
         );
@@ -687,7 +768,6 @@ public class Main {
         );
     }
 
-    // للاختبار فقط: ربط البحث عن كلمة بالقائمة.
     private static void handlePositionalSearch(
             BufferedReader reader,
             PositionalSearchEngine searchEngine
@@ -732,7 +812,50 @@ public class Main {
         );
     }
 
-    // للاختبار فقط: ربط مقارنة النصوص بالقائمة.
+    private static void handlePhraseSearch(
+            BufferedReader reader,
+            PhraseSearchEngine phraseSearchEngine
+    ) throws IOException {
+
+        System.out.print(
+                "Enter a phrase to search: "
+        );
+
+        String query =
+                reader.readLine();
+
+        List<SearchMatch> matches =
+                phraseSearchEngine.searchPhrase(
+                        query
+                );
+
+        System.out.println();
+
+        System.out.println(
+                "========== PHRASE SEARCH RESULTS =========="
+        );
+
+        if (matches.isEmpty()) {
+
+            System.out.println(
+                    "No phrase matches were found."
+            );
+
+        } else {
+
+            for (SearchMatch match : matches) {
+
+                System.out.println(
+                        match
+                );
+            }
+        }
+
+        System.out.println(
+                "==========================================="
+        );
+    }
+
     private static void handleSimilarity(
             BufferedReader reader,
             ProcessedText firstProcessedText,
@@ -790,48 +913,242 @@ public class Main {
         );
     }
 
-    // للاختبار فقط: ربط البحث عن عبارة بالقائمة.
-    private static void handlePhraseSearch(
+    private static void handleReplacement(
             BufferedReader reader,
-            PhraseSearchEngine phraseSearchEngine
+            TextReplacementService replacementService,
+            UndoRedoManager undoRedoManager,
+            PositionalSearchEngine searchEngine,
+            PhraseSearchEngine phraseSearchEngine,
+            AutocompleteService autocompleteService
     ) throws IOException {
 
         System.out.print(
-                "Enter a phrase to search: "
+                "Enter the word to replace: "
         );
 
-        String query =
+        String targetWord =
                 reader.readLine();
 
-        List<SearchMatch> matches =
-                phraseSearchEngine.searchPhrase(
-                        query
+        System.out.print(
+                "Enter the replacement word: "
+        );
+
+        String replacementWord =
+                reader.readLine();
+
+        if (
+                targetWord == null
+                        || targetWord.isBlank()
+                        || replacementWord == null
+                        || replacementWord.isBlank()
+        ) {
+
+            System.out.println(
+                    "Target and replacement words cannot be empty."
+            );
+
+            return;
+        }
+
+        if (
+                targetWord.trim().matches(".*\\s+.*")
+                        || replacementWord
+                        .trim()
+                        .matches(".*\\s+.*")
+        ) {
+
+            System.out.println(
+                    "Please enter one word only."
+            );
+
+            return;
+        }
+
+        ReplacementResult result =
+                replacementService.replaceWord(
+                        undoRedoManager.getCurrentState(),
+                        targetWord,
+                        replacementWord,
+                        undoRedoManager
                 );
 
         System.out.println();
 
         System.out.println(
-                "========== PHRASE SEARCH RESULTS =========="
+                "========== REPLACEMENT RESULT =========="
         );
 
-        if (matches.isEmpty()) {
+        System.out.println(
+                result
+        );
 
-            System.out.println(
-                    "No phrase matches were found."
+        if (result.wasSuccessful()) {
+
+            refreshIndexes(
+                    result.getResultingState(),
+                    searchEngine,
+                    phraseSearchEngine,
+                    autocompleteService
             );
 
-        } else {
-
-            for (SearchMatch match : matches) {
-
-                System.out.println(
-                        match
-                );
-            }
+            System.out.println(
+                    "Updated text: "
+                            + result
+                            .getResultingState()
+                            .getProcessedText()
+                            .getCleanedText()
+            );
         }
 
         System.out.println(
-                "==========================================="
+                "========================================"
+        );
+    }
+
+    private static void handleUndo(
+            UndoRedoManager undoRedoManager,
+            PositionalSearchEngine searchEngine,
+            PhraseSearchEngine phraseSearchEngine,
+            AutocompleteService autocompleteService
+    ) {
+
+        if (!undoRedoManager.canUndo()) {
+
+            System.out.println(
+                    "Nothing to undo."
+            );
+
+            return;
+        }
+
+        TextState restoredState =
+                undoRedoManager.undo();
+
+        refreshIndexes(
+                restoredState,
+                searchEngine,
+                phraseSearchEngine,
+                autocompleteService
+        );
+
+        System.out.println();
+
+        System.out.println(
+                "Undo completed."
+        );
+
+        System.out.println(
+                "Current state: "
+                        + restoredState
+                        .getDescription()
+        );
+
+        System.out.println(
+                "Current text: "
+                        + restoredState
+                        .getProcessedText()
+                        .getCleanedText()
+        );
+
+        System.out.println(
+                "Undo depth: "
+                        + undoRedoManager
+                        .getUndoDepth()
+        );
+
+        System.out.println(
+                "Redo depth: "
+                        + undoRedoManager
+                        .getRedoDepth()
+        );
+    }
+
+    private static void handleRedo(
+            UndoRedoManager undoRedoManager,
+            PositionalSearchEngine searchEngine,
+            PhraseSearchEngine phraseSearchEngine,
+            AutocompleteService autocompleteService
+    ) {
+
+        if (!undoRedoManager.canRedo()) {
+
+            System.out.println(
+                    "Nothing to redo."
+            );
+
+            return;
+        }
+
+        TextState restoredState =
+                undoRedoManager.redo();
+
+        refreshIndexes(
+                restoredState,
+                searchEngine,
+                phraseSearchEngine,
+                autocompleteService
+        );
+
+        System.out.println();
+
+        System.out.println(
+                "Redo completed."
+        );
+
+        System.out.println(
+                "Current state: "
+                        + restoredState
+                        .getDescription()
+        );
+
+        System.out.println(
+                "Current text: "
+                        + restoredState
+                        .getProcessedText()
+                        .getCleanedText()
+        );
+
+        System.out.println(
+                "Undo depth: "
+                        + undoRedoManager
+                        .getUndoDepth()
+        );
+
+        System.out.println(
+                "Redo depth: "
+                        + undoRedoManager
+                        .getRedoDepth()
+        );
+    }
+
+    private static void refreshIndexes(
+            TextState textState,
+            PositionalSearchEngine searchEngine,
+            PhraseSearchEngine phraseSearchEngine,
+            AutocompleteService autocompleteService
+    ) {
+
+        if (
+                textState == null
+                        || textState.getProcessedText() == null
+        ) {
+
+            return;
+        }
+
+        ProcessedText processedText =
+                textState.getProcessedText();
+
+        searchEngine.buildIndex(
+                processedText
+        );
+
+        phraseSearchEngine.buildIndex(
+                processedText
+        );
+
+        autocompleteService.rebuildIndex(
+                processedText
         );
     }
 }

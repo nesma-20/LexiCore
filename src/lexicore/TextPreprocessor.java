@@ -28,6 +28,8 @@ public class TextPreprocessor {
         List<String> allTokens =
                 new ArrayList<>();
 
+
+
         String[] sentences =
                 normalizedText.split("[.!?]+");
 
@@ -49,8 +51,11 @@ public class TextPreprocessor {
             String[] words =
                     cleanedSentence.split("\\s+");
 
+//كل دورة من حلقة for يتم إنشاء قائمة جديدة وفارغة للجملة الحالية
             List<String> currentSentenceTokens =
                     new ArrayList<>();
+
+
 
             for (String word : words) {
 

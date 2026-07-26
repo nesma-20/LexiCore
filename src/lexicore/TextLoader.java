@@ -14,6 +14,7 @@ public class TextLoader {
     private static final String END_SENTINEL = "$$END_TEXT$$";
 
     public String readFromKeyboard(BufferedReader reader)
+            // throws  تحذير أن الخطأ ممكن
             throws IOException {
 
         StringBuilder textBuilder = new StringBuilder();
@@ -43,6 +44,8 @@ public class TextLoader {
         return textBuilder.toString();
     }
 
+
+
     public String readFromFile(String filePath)
             throws IOException {
 
@@ -58,13 +61,13 @@ public class TextLoader {
             path = Path.of(filePath.trim());
         } catch (InvalidPathException exception) {
             throw new IOException(
-                    "The file path is invalid."
+                    "The file path is invalid"
             );
         }
 
         if (!path.isAbsolute()) {
             throw new IOException(
-                    "Please enter an absolute file path."
+                    "Please enter an absolute file path"
             );
         }
 
@@ -88,7 +91,9 @@ public class TextLoader {
 
         StringBuilder textBuilder = new StringBuilder();
 
-        try (BufferedReader fileReader =
+        try (
+          //ظيفته أن يفتح الملف وبعد انتهاء القراءة يغلقه تلقائي.
+                BufferedReader fileReader =
                      Files.newBufferedReader(
                              path,
                              StandardCharsets.UTF_8
