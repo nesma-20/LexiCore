@@ -41,10 +41,7 @@ public class AutocompleteService {
                 continue;
             }
 
-            /*
-             * Every repeated insertion increases
-             * the frequency of the complete word.
-             */
+
             trie.insert(word);
         }
     }
